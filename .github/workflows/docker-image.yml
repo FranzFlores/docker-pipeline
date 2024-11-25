@@ -18,20 +18,35 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Git Semantic Version
+      uses: PaulHatch/semantic-version@v4.0.3
+      with:
+        major_pattern: "major:"
+        minor_pattern: "feat:"
+        format: "${major}.${minor}.${patch}-prerelease${increment}"
+      id: version
+
+      
     - name: docker Login
       env:
         DOCKER_USER: ${{secrets.DOCKER_USER}}
         DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+        NEW_VERSION: ${{steps.version.outputs.version}}
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
         
     - name: Build Docker Image
+      env:
+        NEW_VERSION: ${{steps.version.outputs.version}}
       run: |
-        docker build -t franzflores21/docker-pipeline:0.0.2 .
+        docker build -t franzflores21/docker-pipeline:$NEW_VERSION .
+        docker build -t franzflores21/docker-pipeline:latest .
 
     - name: Push Docker Image
+      env:
+        NEW_VERSION: ${{steps.version.outputs.version}}
       run: |
-        docker push franzflores21/docker-pipeline:0.0.2
-    
+        docker push franzflores21/docker-pipeline:$NEW_VERSION
+        docker push franzflores21/docker-pipeline:latest
     # - name: Build the Docker image
     #   run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
